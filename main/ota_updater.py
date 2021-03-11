@@ -64,12 +64,12 @@ class OTAUpdater:
                 versionfile.write(latest_version)
                 versionfile.close()
 
-    def download_and_install_update_if_available(self, ssid, password):
+    def download_and_install_update_if_available(self,):
         if 'next' in os.listdir(self.module):
             if '.version_on_reboot' in os.listdir(self.modulepath('next')):
                 latest_version = self.get_version(self.modulepath('next'), '.version_on_reboot')
                 print('New update found: ', latest_version)
-                self._download_and_install_update(latest_version, ssid, password)
+                self._download_and_install_update(latest_version)
         else:
             print('No new updates found...')
 
