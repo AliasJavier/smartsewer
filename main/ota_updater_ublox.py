@@ -5,7 +5,7 @@ import usocket
 import os
 import gc
 import machine
-
+import socketUblox
 
 
 class OTAUpdater:
@@ -217,7 +217,7 @@ class HttpClient:
 
     def __init__(self, headers={}):
         self._headers = headers
-        self.wdt = machine.WDT(timeout=50000)
+        #self.wdt = machine.WDT(timeout=50000)
 
     def request(self, method, url, data=None, json=None, headers={}, stream=None):
         def _write_headers(sock, _headers):
@@ -240,18 +240,26 @@ class HttpClient:
         if ':' in host:
             host, port = host.split(':', 1)
             port = int(port)
-        try:
-            ai = usocket.getaddrinfo(host, port, 0, usocket.SOCK_STREAM)
-            ai = ai[0]
+        #try:
+        print(host)
+        socket = socketUblox.socket()
+        ai = socket.getaddrinfo(host, port, 0, usocket.SOCK_STREAM)
+        #ai = usocket.getaddrinfo(host, port)
+        print(ai)
+        #ai = ai[0]
 
-            s = usocket.socket(ai[0], ai[1], ai[2])
-        except OSError:
-            machine.reset()
+        #s = usocket.socket(ai[0], ai[1], ai[2])
+        #s = socket.socket(ai[0], ai[1], ai[2])
+        #except OSError:
+         #  print('RESET')
+          #  #machine.reset()
         try:
-            s.connect(ai[-1])
+            print(ai[0])
+            print(ai[1])
+            socket.connect(ai)
             if proto == 'https:':
                 s = ussl.wrap_socket(s, server_hostname=host)
-            self.wdt.feed()
+            #self.wdt.feed()
             s.write(b'%s /%s HTTP/1.0\r\n' % (method, path))
             if not 'Host' in headers:
                 s.write(b'Host: %s\r\n' % host)
