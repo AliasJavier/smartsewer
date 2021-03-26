@@ -6,7 +6,8 @@ import os
 import gc
 import machine
 import socketUblox
-
+import gc
+import micropython
 
 class OTAUpdater:
 
@@ -73,15 +74,19 @@ class OTAUpdater:
         else:
             print('No new updates found...')
 
-    def _download_and_install_update(self, latest_version, ssid, password):
+    def _download_and_install_update(self, latest_version):
         # OTAUpdater.using_network(ssid, password)
-
+        print('entra')
         self.download_all_files(self.github_repo + '/contents/' + self.main_dir, latest_version)
+        print('entra1')
         self.rmtree(self.modulepath(self.main_dir))
+        print('entra2')
         os.rename(self.modulepath('next/.version_on_reboot'), self.modulepath('next/.version'))
+        print('entra3')
         os.rename(self.modulepath('next'), self.modulepath(self.main_dir))
+        print('entra4')
         print('Update installed (', latest_version, '), will reboot now')
-        machine.reset()
+        #machine.reset()
 
     def apply_pending_updates_if_available(self):
         if 'next' in os.listdir(self.module):
@@ -143,7 +148,7 @@ class OTAUpdater:
 
     def download_all_files(self, root_url, version):
         file_list = self.http_client.get(root_url + '?ref=refs/tags/' + version)
-        print(self.main_dir)
+        print(self.main_dir+'HOLA')
         print(root_url + '?ref=refs/tags/' + version)
         for file in file_list.json():
             if file['type'] == 'file':
@@ -160,20 +165,23 @@ class OTAUpdater:
         file_list.close()
 
     def download_file(self, url, path):
+        gc.collect()
         print('\tDownloading: ', path)
-        with open(self.module + '/' + path, 'w') as outfile:
-            try:
-                response = self.http_client.get(url)
-                #print(response.text)
-                outfile.write(response.text)
-                #print(outfile.read())
-                maino = self.module
-                abrir = open(maino + '/main.py','r')
-                mostrar = abrir.read()
-            finally:
-                response.close()
-                outfile.close()
-                gc.collect()
+        print(self.module + '/' + path)
+        #with open(self.module + '/' + path, 'w') as outfile:
+        with open(path, 'w') as outfile:
+    
+            response = self.http_client.get(url)
+            #print(response.text)
+            outfile.write(response.text)
+            #print(outfile.read())
+            maino = self.module
+            abrir = open(maino + '/main.py','r')
+            mostrar = abrir.read()
+        
+            response.close()
+            outfile.close()
+            gc.collect()
 
     def modulepath(self, path):
         return self.module + '/' + path if self.module else path
@@ -200,7 +208,7 @@ class Response:
             try:
                 self._cached = self.raw.read()
             finally:
-                self.raw.close()
+                #self.raw.close()
                 self.raw = None
         return self._cached
 
@@ -249,16 +257,21 @@ class HttpClient:
         #ai = ai[0]
 
         #s = usocket.socket(ai[0], ai[1], ai[2])
-        #s = socket.socket(ai[0], ai[1], ai[2])
+        #s = socket(ai[0], 0)
         #except OSError:
          #  print('RESET')
           #  #machine.reset()
+        gc.collect()
         try:
             print(ai[0])
             print(ai[1])
             socket.connect(ai)
+            gc.collect()
+            micropython.mem_info()
+            print('-----------------------------')
+            print('Initial free: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
             if proto == 'https:':
-                s = ussl.wrap_socket(s, server_hostname=host)
+                s = ussl.wrap_socket(socket, server_hostname=host)
             #self.wdt.feed()
             s.write(b'%s /%s HTTP/1.0\r\n' % (method, path))
             if not 'Host' in headers:
